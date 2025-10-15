@@ -1,0 +1,23 @@
+cat > config/deepseek-config.json << 'EOF'
+{
+  "provider": "deepseek",
+  "apiEndpoint": "https://api.deepseek.com/v1",
+  "model": "deepseek-chat",
+  "networkChunking": {
+    "enabled": true,
+    "chunkSize": 4096,
+    "maxChunks": 10,
+    "streaming": true
+  },
+  "server": {
+    "host": "0.0.0.0",
+    "mcpPort": 3000,
+    "webPort": 8080
+  },
+  "features": {
+    "codeExecution": true,
+    "fileOperations": true,
+    "networkOperations": true
+  }
+}
+EOF
