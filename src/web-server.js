@@ -1,4 +1,3 @@
-cat > src/web-server.js << 'EOF'
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -77,4 +76,3 @@ app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Web interface running on http://0.0.0.0:${PORT}`);
   console.log(`📡 API endpoint: http://0.0.0.0:${PORT}/api`);
 });
-EOF
