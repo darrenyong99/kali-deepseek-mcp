@@ -1,4 +1,3 @@
-cat > scripts/deploy.sh << 'EOF'
 #!/bin/bash
 echo "🚀 Deploying MCP Kali Linux Server..."
 
@@ -20,6 +19,4 @@ npm run web
 
 echo "✅ Deployment complete!"
 echo "📡 Web interface: http://0.0.0.0:8080"
-EOF
-
 chmod +x scripts/deploy.sh
