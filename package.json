@@ -1,4 +1,3 @@
-cat > package.json << 'EOF'
 {
   "name": "mcp-deepseek-server",
   "version": "1.0.0",
@@ -19,4 +18,3 @@ cat > package.json << 'EOF'
     "cors": "^2.8.5"
   }
 }
-EOF
