@@ -1,4 +1,3 @@
-cat > src/mcp-server.js << 'EOF'
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import axios from "axios";
@@ -239,4 +238,3 @@ class DeepSeekMCPServer {
 
 const server = new DeepSeekMCPServer();
 server.run().catch(console.error);
-EOF
