@@ -2,13 +2,13 @@
   "name": "mcp-deepseek-server",
   "version": "1.0.0",
   "type": "module",
-  "description": "MCP Server with DeepSeek integration for Kali Linux",
-  "main": "src/server.js",
+  "description": "MCP Server with DeepSeek auto-execution for Kali Linux",
+  "main": "src/mcp-server.js",
   "scripts": {
-    "start": "node src/server.js",
     "mcp": "node src/mcp-server.js",
-    "web": "node src/web-server.js",
-    "dev": "node src/web-server.js"
+    "mcp-cli": "node src/mcp-server.js --cli",
+    "web": "node src/api-server.js",
+    "dev": "node src/api-server.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
