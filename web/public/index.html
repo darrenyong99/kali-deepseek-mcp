@@ -3,163 +3,283 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MCP Kali Linux - DeepSeek Interface</title>
+    <title>Kali MCP - DeepSeek Auto-Execute</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            background: #0a0e27;
+            color: #00ff41;
             min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
             padding: 20px;
         }
+        
         .container {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            max-width: 900px;
-            width: 100%;
-            padding: 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #0f1419;
+            border: 2px solid #00ff41;
+            border-radius: 10px;
+            overflow: hidden;
         }
-        h1 {
-            color: #667eea;
-            margin-bottom: 10px;
+        
+        .header {
+            background: linear-gradient(90deg, #00ff41, #00cc33);
+            color: #000;
+            padding: 20px;
             text-align: center;
         }
-        .subtitle {
-            text-align: center;
-            color: #666;
-            margin-bottom: 30px;
+        
+        .header h1 {
+            font-size: 28px;
+            margin: 0;
         }
-        .status {
-            padding: 10px;
+        
+        .header p {
+            margin: 5px 0 0 0;
+            opacity: 0.8;
+        }
+        
+        .content {
+            padding: 20px;
+        }
+        
+        .status-box {
+            background: #1a1f3a;
+            border: 1px solid #00ff41;
+            padding: 15px;
+            margin-bottom: 20px;
             border-radius: 5px;
+        }
+        
+        .status-box.ready {
+            border-color: #00ff41;
+            background: #0f2a0f;
+        }
+        
+        .status-box.error {
+            border-color: #ff3333;
+            background: #2a0f0f;
+            color: #ff3333;
+        }
+        
+        .input-section {
             margin-bottom: 20px;
-            text-align: center;
         }
-        .status.ok {
-            background: #d4edda;
-            color: #155724;
+        
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: bold;
+            color: #00ff41;
         }
-        .status.error {
-            background: #f8d7da;
-            color: #721c24;
-        }
-        .input-group {
-            margin-bottom: 20px;
-        }
+        
         textarea {
             width: 100%;
             padding: 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            font-size: 16px;
-            resize: vertical;
-            min-height: 150px;
+            background: #1a1f3a;
+            color: #00ff41;
+            border: 1px solid #00ff41;
+            border-radius: 5px;
             font-family: inherit;
+            font-size: 14px;
+            min-height: 120px;
+            resize: vertical;
         }
+        
         textarea:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: #00ffff;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
         }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
         button {
-            width: 100%;
-            padding: 15px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            flex: 1;
+            padding: 12px 20px;
+            background: #00ff41;
+            color: #000;
             border: none;
-            border-radius: 10px;
-            font-size: 18px;
+            border-radius: 5px;
             font-weight: bold;
             cursor: pointer;
-            transition: transform 0.2s;
+            transition: all 0.3s;
+            font-family: inherit;
         }
+        
         button:hover {
+            background: #00ffff;
             transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 255, 65, 0.3);
         }
+        
         button:disabled {
-            opacity: 0.6;
+            opacity: 0.5;
             cursor: not-allowed;
+            transform: none;
         }
-        .output {
+        
+        .output-section {
             margin-top: 30px;
-            padding: 20px;
-            background: #f5f5f5;
-            border-radius: 10px;
+        }
+        
+        .output-box {
+            background: #1a1f3a;
+            border: 1px solid #00ff41;
+            border-radius: 5px;
+            padding: 15px;
             min-height: 200px;
-            white-space: pre-wrap;
-            font-family: 'Courier New', monospace;
-            display: none;
             max-height: 500px;
             overflow-y: auto;
-        }
-        .output.show {
-            display: block;
-        }
-        .loading {
-            text-align: center;
-            color: #667eea;
-            margin-top: 20px;
             display: none;
         }
+        
+        .output-box.show {
+            display: block;
+        }
+        
+        .output-box h3 {
+            color: #00ffff;
+            margin-bottom: 10px;
+            margin-top: 0;
+        }
+        
+        .output-text {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #00ffff;
+            animation: pulse 1s infinite;
+        }
+        
         .loading.show {
             display: block;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .command-list {
+            background: #1a1f3a;
+            border: 1px solid #00ff41;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .command-list h3 {
+            color: #00ffff;
+            margin-top: 0;
+        }
+        
+        .commands-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .command-btn {
+            padding: 8px 12px;
+            background: #2a3f5f;
+            border: 1px solid #00ff41;
+            color: #00ff41;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+        
+        .command-btn:hover {
+            background: #00ff41;
+            color: #000;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🐉 MCP Kali Linux</h1>
-        <p class="subtitle">DeepSeek AI Integration</p>
-        
-        <div class="status" id="status">
-            Checking API status...
+        <div class="header">
+            <h1>🐉 KALI MCP - DEEPSEEK AUTO-EXECUTE</h1>
+            <p>Penetration Testing with Automatic Command Execution</p>
         </div>
         
-        <div class="input-group">
-            <textarea id="instruction" placeholder="Enter your instruction or query here... (Ctrl+Enter to execute)"></textarea>
+        <div class="content">
+            <div class="status-box ready" id="status">
+                ✓ Connected - Auto-Execution Enabled
+            </div>
+            
+            <div class="command-list">
+                <h3>Quick Commands:</h3>
+                <div class="commands-grid">
+                    <button class="command-btn" onclick="quickCommand('nslookup google.com')">DNS Lookup</button>
+                    <button class="command-btn" onclick="quickCommand('ping -c 4 8.8.8.8')">Ping Test</button>
+                    <button class="command-btn" onclick="quickCommand('nmap -p 80,443 scanme.nmap.org')">Port Scan</button>
+                    <button class="command-btn" onclick="quickCommand('ifconfig')">Network Info</button>
+                    <button class="command-btn" onclick="quickCommand('whois google.com')">Domain Info</button>
+                    <button class="command-btn" onclick="quickCommand('dig google.com')">DNS Query</button>
+                </div>
+            </div>
+            
+            <div class="input-section">
+                <label for="instruction">Enter Penetration Testing Request:</label>
+                <textarea id="instruction" placeholder="Example: Run nmap scan on 192.168.1.1 and tell me what services are running&#10;Or: Check DNS records for example.com"></textarea>
+            </div>
+            
+            <div class="button-group">
+                <button onclick="executeCommand()" id="executeBtn">▶ EXECUTE NOW</button>
+                <button onclick="clearOutput()">✕ CLEAR</button>
+            </div>
+            
+            <div class="loading" id="loading">
+                ⏳ Executing commands... Please wait...
+            </div>
+            
+            <div class="output-section">
+                <div class="output-box" id="output">
+                    <h3>Execution Results:</h3>
+                    <div class="output-text" id="outputText"></div>
+                </div>
+            </div>
         </div>
-        
-        <button onclick="executeInstruction()" id="executeBtn">Execute Query</button>
-        
-        <div class="loading" id="loading">⏳ Processing your request...</div>
-        
-        <div class="output" id="output"></div>
     </div>
 
     <script>
-        async function checkStatus() {
-            try {
-                const response = await fetch('/api/health');
-                const data = await response.json();
-                const statusDiv = document.getElementById('status');
-                
-                if (data.apiConfigured) {
-                    statusDiv.className = 'status ok';
-                    statusDiv.textContent = '✅ API Configured - Ready to use';
-                } else {
-                    statusDiv.className = 'status error';
-                    statusDiv.textContent = '⚠️ API Key not configured - Please set DEEPSEEK_API_KEY in .env';
-                }
-            } catch (error) {
-                const statusDiv = document.getElementById('status');
-                statusDiv.className = 'status error';
-                statusDiv.textContent = '❌ Server connection failed';
-            }
-        }
-        
-        async function executeInstruction() {
+        async function executeCommand() {
             const instruction = document.getElementById('instruction').value;
-            const outputDiv = document.getElementById('output');
-            const loadingDiv = document.getElementById('loading');
-            const executeBtn = document.getElementById('executeBtn');
             
             if (!instruction.trim()) {
-                alert('Please enter an instruction');
+                alert('Please enter a command');
                 return;
             }
+            
+            await sendRequest(instruction);
+        }
+        
+        function quickCommand(cmd) {
+            document.getElementById('instruction').value = cmd;
+            setTimeout(() => executeCommand(), 100);
+        }
+        
+        async function sendRequest(instruction) {
+            const outputDiv = document.getElementById('output');
+            const outputText = document.getElementById('outputText');
+            const loadingDiv = document.getElementById('loading');
+            const executeBtn = document.getElementById('executeBtn');
             
             executeBtn.disabled = true;
             loadingDiv.classList.add('show');
@@ -177,14 +297,14 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    outputDiv.textContent = data.output;
+                    outputText.textContent = data.output;
+                    outputDiv.classList.add('show');
                 } else {
-                    outputDiv.textContent = 'Error: ' + (data.error || 'Unknown error');
+                    outputText.textContent = 'Error: ' + (data.error || 'Unknown error');
+                    outputDiv.classList.add('show');
                 }
-                
-                outputDiv.classList.add('show');
             } catch (error) {
-                outputDiv.textContent = 'Error: ' + error.message;
+                outputText.textContent = 'Error: ' + error.message;
                 outputDiv.classList.add('show');
             } finally {
                 executeBtn.disabled = false;
@@ -192,13 +312,17 @@
             }
         }
         
+        function clearOutput() {
+            document.getElementById('output').classList.remove('show');
+            document.getElementById('instruction').value = '';
+        }
+        
+        // Keyboard shortcut
         document.getElementById('instruction').addEventListener('keydown', (e) => {
-            if (e.ctrlKey && e.key === 'Enter') {
-                executeInstruction();
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                executeCommand();
             }
         });
-        
-        checkStatus();
     </script>
 </body>
 </html>
