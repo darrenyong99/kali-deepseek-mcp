@@ -1,3 +1,8 @@
+# Check if mcp-server.js exists and has content
+head -n 20 src/mcp-server.js
+
+# If it doesn't exist or is empty, create it:
+cat > src/mcp-server.js << 'EOF'
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import axios from "axios";
@@ -459,3 +464,7 @@ if (args[0] === "--cli") {
   const server = new KaliMCPServer();
   server.run();
 }
+EOF
+
+# Verify file created
+ls -lh src/mcp-server.js
