@@ -1,56 +1,120 @@
+# Check if mcp-server.js exists and has content
+head -n 20 src/mcp-server.js
+
+# If it doesn't exist or is empty, create it:
+cat > src/mcp-server.js << 'EOF'
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import axios from "axios";
 import { exec } from "child_process";
 import { promisify } from "util";
 import dotenv from "dotenv";
-import path from "path";
-import { fileURLToPath } from "url";
+import fs from "fs/promises";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const envPath = path.join(__dirname, "../.env");
-
-dotenv.config({ path: envPath });
-
-console.error(`[DEBUG] Loading .env from: ${envPath}`);
-console.error(`[DEBUG] DEEPSEEK_API_KEY exists: ${!!process.env.DEEPSEEK_API_KEY}`);
-console.error(`[DEBUG] API Key length: ${process.env.DEEPSEEK_API_KEY?.length || 0}`);
+dotenv.config();
 
 const execAsync = promisify(exec);
-let DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
-const DEEPSEEK_API_URL = process.env.DEEPSEEK_API_URL || "https://api.deepseek.com/v1/chat/completions";
-const DEEPSEEK_MODEL = process.env.DEEPSEEK_MODEL || "deepseek-chat";
+const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
+const DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions";
 
+// Kali Linux tools available for automatic execution
 const KALI_TOOLS = {
-  nmap: { description: "Network scanning", command: "nmap", dangerous: true },
-  nslookup: { description: "DNS lookup", command: "nslookup", dangerous: false },
-  ping: { description: "Test connectivity", command: "ping", dangerous: false },
-  traceroute: { description: "Trace route", command: "traceroute", dangerous: false },
-  netstat: { description: "Network stats", command: "netstat", dangerous: false },
-  ifconfig: { description: "Network config", command: "ifconfig", dangerous: false },
-  dig: { description: "DNS query", command: "dig", dangerous: false },
-  whois: { description: "Domain info", command: "whois", dangerous: false },
-  curl: { description: "HTTP requests", command: "curl", dangerous: false },
-  wget: { description: "Download files", command: "wget", dangerous: false },
+  nmap: {
+    description: "Network scanning and port detection",
+    command: "nmap",
+    dangerous: true
+  },
+  nslookup: {
+    description: "DNS lookup and reverse DNS queries",
+    command: "nslookup",
+    dangerous: false
+  },
+  ping: {
+    description: "Test network connectivity",
+    command: "ping",
+    dangerous: false
+  },
+  traceroute: {
+    description: "Trace network path to host",
+    command: "traceroute",
+    dangerous: false
+  },
+  netstat: {
+    description: "Network statistics and connections",
+    command: "netstat",
+    dangerous: false
+  },
+  ifconfig: {
+    description: "Network interface configuration",
+    command: "ifconfig",
+    dangerous: false
+  },
+  dig: {
+    description: "DNS query tool",
+    command: "dig",
+    dangerous: false
+  },
+  whois: {
+    description: "Domain and IP information lookup",
+    command: "whois",
+    dangerous: false
+  },
+  curl: {
+    description: "Transfer data from URLs",
+    command: "curl",
+    dangerous: false
+  },
+  wget: {
+    description: "Download files from web",
+    command: "wget",
+    dangerous: false
+  },
+  metasploit: {
+    description: "Metasploit framework exploitation",
+    command: "msfconsole",
+    dangerous: true
+  },
+  sqlmap: {
+    description: "SQL injection testing",
+    command: "sqlmap",
+    dangerous: true
+  },
+  airmon: {
+    description: "Wireless monitoring mode",
+    command: "airmon-ng",
+    dangerous: false
+  },
+  hydra: {
+    description: "Password cracking tool",
+    command: "hydra",
+    dangerous: true
+  }
 };
 
 class KaliMCPServer {
   constructor() {
-    this.server = new Server({
-      name: "kali-mcp-deepseek",
-      version: "1.0.0",
-    });
+    this.server = new Server(
+      {
+        name: "kali-mcp-deepseek",
+        version: "1.0.0",
+      },
+      {
+        capabilities: {
+          tools: {},
+        },
+      }
+    );
 
     this.setupHandlers();
     this.conversationHistory = [];
   }
 
   setupHandlers() {
-    // Handler for listing tools
+    // List all available tools
     this.server.setRequestHandler("tools/list", async () => {
       const tools = [];
 
+      // Add all Kali tools
       Object.entries(KALI_TOOLS).forEach(([key, tool]) => {
         tools.push({
           name: `kali_${key}`,
@@ -60,11 +124,11 @@ class KaliMCPServer {
             properties: {
               args: {
                 type: "string",
-                description: `Arguments for ${tool.command}`,
+                description: `Arguments for ${tool.command} command`,
               },
               timeout: {
                 type: "number",
-                description: "Timeout in seconds",
+                description: "Command timeout in seconds (default: 30)",
                 default: 30,
               },
             },
@@ -73,14 +137,31 @@ class KaliMCPServer {
         });
       });
 
+      // Add AI reasoning tool
+      tools.push({
+        name: "ai_analyze",
+        description: "Analyze results and determine next steps",
+        inputSchema: {
+          type: "object",
+          properties: {
+            analysis: {
+              type: "string",
+              description: "Analysis of results and recommendations",
+            },
+          },
+          required: ["analysis"],
+        },
+      });
+
       return { tools };
     });
 
-    // Handler for tool execution
+    // Handle tool calls from DeepSeek
     this.server.setRequestHandler("tools/call", async (request) => {
       const { name, arguments: args } = request.params;
 
       try {
+        // Check if it's a Kali tool
         for (const [key, tool] of Object.entries(KALI_TOOLS)) {
           if (name === `kali_${key}`) {
             return await this.executeKaliCommand(
@@ -89,6 +170,18 @@ class KaliMCPServer {
               args.timeout || 30
             );
           }
+        }
+
+        // AI analysis tool
+        if (name === "ai_analyze") {
+          return {
+            content: [
+              {
+                type: "text",
+                text: args.analysis,
+              },
+            ],
+          };
         }
 
         throw new Error(`Unknown tool: ${name}`);
@@ -121,7 +214,7 @@ class KaliMCPServer {
         content: [
           {
             type: "text",
-            text: output || `${command} executed successfully`,
+            text: output || `${command} executed successfully with no output`,
           },
         ],
       };
@@ -139,31 +232,39 @@ class KaliMCPServer {
   }
 
   async queryDeepSeekWithTools(userMessage) {
-    if (!DEEPSEEK_API_KEY || DEEPSEEK_API_KEY.includes("YOUR_ACTUAL")) {
-      throw new Error("DEEPSEEK_API_KEY not configured in .env");
-    }
-
     this.conversationHistory.push({
       role: "user",
       content: userMessage,
     });
 
-    const systemPrompt = `You are a Kali Linux assistant. When asked to run commands:
-1. Call the appropriate kali_* tool immediately
-2. Do NOT ask for confirmation
-3. Analyze and provide security insights
-4. Available tools: ${Object.keys(KALI_TOOLS).map((k) => `kali_${k}`).join(", ")}`;
+    const systemPrompt = `You are a Kali Linux penetration testing assistant with access to Kali tools.
+When a user asks you to run commands (nmap, nslookup, etc.), you MUST:
+1. Directly call the appropriate tool with the correct arguments
+2. Do NOT ask for confirmation - execute immediately
+3. Analyze the results and provide security insights
+4. Suggest next steps based on findings
+5. For network scanning, use appropriate timeouts and targets
+6. Always provide detailed analysis of results
+
+Available tools: ${Object.keys(KALI_TOOLS)
+      .map((k) => `kali_${k}`)
+      .join(", ")}
+
+Execute commands directly without hesitation or warnings.`;
 
     try {
       const response = await axios.post(
         DEEPSEEK_API_URL,
         {
-          model: DEEPSEEK_MODEL,
+          model: "deepseek-chat",
           messages: [
-            { role: "system", content: systemPrompt },
+            {
+              role: "system",
+              content: systemPrompt,
+            },
             ...this.conversationHistory,
           ],
-          tools: this.getToolDefinitions(),
+          tools: await this.getToolDefinitions(),
           tool_choice: "auto",
           stream: false,
         },
@@ -178,6 +279,7 @@ class KaliMCPServer {
 
       const message = response.data.choices[0].message;
 
+      // If DeepSeek wants to call tools
       if (message.tool_calls) {
         let results = [];
 
@@ -187,6 +289,7 @@ class KaliMCPServer {
 
           console.error(`[TOOL_CALL] ${toolName} with args:`, toolArgs);
 
+          // Execute the tool
           let toolResult;
           for (const [key, tool] of Object.entries(KALI_TOOLS)) {
             if (toolName === `kali_${key}`) {
@@ -205,13 +308,19 @@ class KaliMCPServer {
           });
         }
 
+        // Add assistant message and tool results to history
         this.conversationHistory.push({
           role: "assistant",
           content: message.content || "Executing commands...",
+          tool_calls: message.tool_calls,
         });
 
+        // Get final analysis from DeepSeek
         const toolResultsText = results
-          .map((r) => `Tool: ${r.name}\nResult: ${r.result.content[0].text}`)
+          .map(
+            (r) =>
+              `Tool: ${r.name}\nResult: ${r.result.content[0].text}`
+          )
           .join("\n\n");
 
         this.conversationHistory.push({
@@ -219,10 +328,11 @@ class KaliMCPServer {
           content: `Command results:\n${toolResultsText}`,
         });
 
+        // Get analysis
         const analysisResponse = await axios.post(
           DEEPSEEK_API_URL,
           {
-            model: DEEPSEEK_MODEL,
+            model: "deepseek-chat",
             messages: this.conversationHistory,
             stream: false,
           },
@@ -234,7 +344,8 @@ class KaliMCPServer {
           }
         );
 
-        const finalResponse = analysisResponse.data.choices[0].message.content;
+        const finalResponse =
+          analysisResponse.data.choices[0].message.content;
         this.conversationHistory.push({
           role: "assistant",
           content: finalResponse,
@@ -247,6 +358,7 @@ class KaliMCPServer {
           results: results.map((r) => r.result.content[0].text),
         };
       } else {
+        // Regular response
         this.conversationHistory.push({
           role: "assistant",
           content: message.content,
@@ -259,11 +371,13 @@ class KaliMCPServer {
       }
     } catch (error) {
       console.error("DeepSeek Error:", error.response?.data || error.message);
-      throw error;
+      return {
+        error: error.response?.data?.error?.message || error.message,
+      };
     }
   }
 
-  getToolDefinitions() {
+  async getToolDefinitions() {
     const tools = [];
 
     Object.entries(KALI_TOOLS).forEach(([key, tool]) => {
@@ -297,9 +411,11 @@ class KaliMCPServer {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
     console.error("[MCP] Kali Linux MCP Server running on stdio");
+    console.error("[MCP] DeepSeek will auto-execute commands");
   }
 }
 
+// CLI mode for direct interaction
 async function cliMode() {
   const server = new KaliMCPServer();
   const readline = await import("readline");
@@ -310,7 +426,9 @@ async function cliMode() {
   });
 
   console.log("\n🐉 Kali MCP - DeepSeek Auto-Execute Mode");
-  console.log("Commands execute automatically. Type 'exit' to quit.\n");
+  console.log(
+    "Commands will be executed automatically. Type 'exit' to quit.\n"
+  );
 
   const askQuestion = () => {
     rl.question("You: ", async (input) => {
@@ -320,17 +438,15 @@ async function cliMode() {
         return;
       }
 
-      try {
-        const result = await server.queryDeepSeekWithTools(input);
+      const result = await server.queryDeepSeekWithTools(input);
 
-        if (result.executed) {
-          console.log(`\n✅ Commands: ${result.commands.join(", ")}`);
-          console.log(`\n📊 Analysis:\n${result.analysis}\n`);
-        } else {
-          console.log(`\n🤖 AI: ${result.response}\n`);
-        }
-      } catch (error) {
-        console.log(`\n❌ Error: ${error.message}\n`);
+      if (result.error) {
+        console.log(`\n❌ Error: ${result.error}\n`);
+      } else if (result.executed) {
+        console.log(`\n✅ Commands Executed: ${result.commands.join(", ")}`);
+        console.log(`\nAnalysis:\n${result.analysis}\n`);
+      } else {
+        console.log(`\n🤖 AI: ${result.response}\n`);
       }
 
       askQuestion();
@@ -340,6 +456,7 @@ async function cliMode() {
   askQuestion();
 }
 
+// Main
 const args = process.argv.slice(2);
 if (args[0] === "--cli") {
   cliMode();
@@ -347,3 +464,7 @@ if (args[0] === "--cli") {
   const server = new KaliMCPServer();
   server.run();
 }
+EOF
+
+# Verify file created
+ls -lh src/mcp-server.js
